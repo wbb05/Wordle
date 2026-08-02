@@ -53,9 +53,9 @@ class GUI:
         enter_button.grid(column = 1, row = 2, sticky = (W,E))
 
         # Add labels to show guesses
-        # First guess is always slate
+        # First guess is always tares?
         self.guess1 = StringVar()
-        self.guess1.set('slate')
+        self.guess1.set('Slate')
         self.guess2 = StringVar()
         self.guess3 = StringVar()
         self.guess4 = StringVar()
@@ -77,8 +77,8 @@ class GUI:
         reset_button = ttk.Button(mainframe, text= "Reset", command= self.reset_game)
         reset_button.grid(column= 3, row = 2, sticky= (W,E))
 
-        
-
+        # DEBUG
+        self.Solver.distribution()
 
     def enter_letters(self):
         # Convert inputted letters
@@ -115,7 +115,7 @@ class GUI:
     def reset_game(self):
 
         # Reset labels
-        self.guess1.set('slate')
+        self.guess1.set('Slate')
         self.guess2.set('')
         self.guess3.set('')
         self.guess4.set('')

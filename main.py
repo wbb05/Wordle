@@ -5,6 +5,8 @@ from tkinter import Tk
 # TODO:
 # Error handling?
 # Double letters
+# Add top five potential guesses
+# Add number of guesses
 
 if __name__ == '__main__':
     #game = Wordle.Wordle()

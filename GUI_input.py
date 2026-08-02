@@ -77,8 +77,6 @@ class GUI:
         reset_button = ttk.Button(mainframe, text= "Reset", command= self.reset_game)
         reset_button.grid(column= 3, row = 2, sticky= (W,E))
 
-        # DEBUG
-        self.Solver.distribution()
 
     def enter_letters(self):
         # Convert inputted letters

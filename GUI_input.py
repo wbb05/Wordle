@@ -3,15 +3,13 @@ from tkinter import ttk
 
 from Wordle import EntropySolver
 from Wordle import Guess
-from Wordle import Wordle
 
 class GUI:
 
     def __init__(self, root):
 
         # Wordle game
-        self.Game = Wordle()
-        self.Solver = EntropySolver(self.Game)
+        self.Solver = EntropySolver()
 
         # Make GUI
         root.title("Wordle Solver")
@@ -55,7 +53,7 @@ class GUI:
         # Add labels to show guesses
         # First guess is always tares?
         self.guess1 = StringVar()
-        self.guess1.set('Slate')
+        self.guess1.set('slate')
         self.guess2 = StringVar()
         self.guess3 = StringVar()
         self.guess4 = StringVar()
@@ -88,9 +86,11 @@ class GUI:
         curr_guess = self.guesses[self.guess_idx].get()
 
         # Reduce based on inputted letters
-        self.Solver.reduce(curr_guess, letters)
-
-        next_guess = self.Solver.distribution()
+        # TODO: Print whole list
+        # TODO: Error handling if no list returned?
+        guess_list = list(self.Solver.distribution(curr_guess, letters).values())
+        print(guess_list)
+        next_guess = guess_list[-1]
 
         self.guess_idx += 1
         self.guesses[self.guess_idx].set(next_guess)
@@ -113,7 +113,7 @@ class GUI:
     def reset_game(self):
 
         # Reset labels
-        self.guess1.set('Slate')
+        self.guess1.set('slate')
         self.guess2.set('')
         self.guess3.set('')
         self.guess4.set('')
@@ -125,7 +125,8 @@ class GUI:
         self.guess_idx = 0
 
         # Reset solver
-        self.Solver = EntropySolver(self.Game)
+        # TODO: Add reset function for solver?
+        self.Solver.guessList = self.Solver.fileReader.wordList
 
             
         

@@ -1,5 +1,5 @@
-import Wordle
 import GUI_input
+from Wordle import *
 from tkinter import Tk
 
 # TODO:
@@ -17,4 +17,8 @@ if __name__ == '__main__':
     root = Tk()
     GUI_input.GUI(root)
     root.mainloop()
+
+    # solver = EntropySolver()
+    # print(solver.distribution("slate", [Guess.GRAY, Guess.GRAY, Guess.GRAY, Guess.GRAY, Guess.GREEN]).values())
+
 

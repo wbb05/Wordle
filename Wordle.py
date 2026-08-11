@@ -20,11 +20,15 @@ class FileLoader:
   # Text file
   def readWordList(self):
     words = {}
-    with open(self.filename, 'r') as fhand:
-      for line in fhand:
-        line = line.rstrip().split(' ')
-        for word in line:
-          words[word] = word
+    try:
+        with open(self.filename, 'r') as fhand:
+            for line in fhand:
+                word = line.rstrip()
+                words[word] = word
+
+    except OSError as e:
+        print(f"Error writing to file: {e}")
+
     return words
 
   # JSON file
@@ -34,47 +38,77 @@ class FileLoader:
     return words
 
 class EntropySolver:
-  def __init__(self, game: Wordle):
-    self.game = game
-    self.guessList = game.wordList
-    
+  def __init__(self):
+    # Read words
+    self.fileReader = FileLoader('words.txt', 'txt')
+    self.wordList = self.fileReader.wordList
+    # Init guess list to all possible words
+    self.guessList = self.fileReader.wordList
 
-  # Reduces guess list based on guess
+  # Creates sequence for guess and answer
+  # Accepts two strings, returns array of enums
+  def check(self, guess: str, answer: str) -> list[Guess]:
+    verify = []
+
+    # Count number of duplicate letters in answer
+    num_letters = {}
+    for i in range(len(answer)):
+       if answer[i] not in num_letters:
+          num_letters[answer[i]] = 1
+       else:
+        num_letters[answer[i]] = num_letters[answer[i]] + 1
+
+    for i in range(len(answer)):
+        if guess[i] == answer[i]:
+            verify.append(Guess.GREEN)
+            num_letters[guess[i]] = num_letters[guess[i]] - 1
+        elif guess[i] in answer and num_letters[guess[i]] > 0: # Letter in word and same number of letters are in word
+            verify.append(Guess.YELLOW)
+            num_letters[guess[i]] = num_letters[guess[i]] - 1
+        else:
+            verify.append(Guess.GRAY)
+    return verify
+    
+  # Reduces guess list based on guess and verify info
   # guess: string
   # verify: Guess enum array
   def reduce(self, guess: str, verify: list[Guess]):
     newCodes = {}
     for answer in self.guessList:
-      if self.game.check(guess, answer) == verify:
+      if self.check(guess, answer) == verify:
         newCodes[answer] = answer
     self.guessList = newCodes
 
-
-
   # Returns highest entropy next guess
-  def distribution(self) -> str:
+  # Based on current guess and verify info
+  def distribution(self, guess: str, verify: list[Guess]) -> dict[float, str]:
+    # Reduce possible guesses
+    self.reduce(guess, verify)
+    # TODO: What if two values with same entropy?
 
-    # TODO: Better error handling
+    # TODO: Better error handling?
     if len(self.guessList) == 0:
       print("No valid guess")
       return
 
-    maxx = -1000000
-    final = None
+    # Sort based on entropy
+    possible_guesses = {}
     for answer in self.guessList:
       scores = {}
       for guess in self.guessList:
-        score = tuple(self.game.check(guess, answer))
+        score = tuple(self.check(guess, answer))
         if score not in scores:
           scores[score] = 1
         else:
           scores[score] += 1
+
       ent = self.entropy(scores)
-      if ent > maxx:
-        final = answer
-        maxx = ent
-    print(f'Total Entropy of {final} is {maxx}')
-    return final
+      possible_guesses[ent] = answer
+
+    # Sort based on entropy
+    possible_guesses = dict(sorted(possible_guesses.items()))
+    
+    return possible_guesses
 
   def entropy(self, dictionary):
     total = sum(dictionary.values())
@@ -83,106 +117,3 @@ class EntropySolver:
       p = item/total
       ent -= p * log(p,2)
     return ent
-
-class Wordle:
-  def __init__(self):
-    self.fileReader = FileLoader('words.txt', 'txt')
-    self.wordList = self.fileReader.wordList
-    self.answer = choice(list(self.wordList))
-    self.AI = EntropySolver(self)
-  
-  # Get result for AI play
-  def user_input(self):
-    
-     verification =  input('Result: ').split(' ')
-     for item in verification:
-       if item in ['g', 'G', 'Green', 'green']:
-         verification[verification.index(item)] = Guess.GREEN
-       elif item in ['y', 'Y', 'Yellow', 'yellow']:
-         verification[verification.index(item)] = Guess.YELLOW
-       elif item in ['gy', 'GY', 'Gray', 'gray']:
-         verification[verification.index(item)] = Guess.GRAY
-       else:
-          print('Invalid input, try again')
-          return self.user_input()
-     return verification
-  
-  # Creates sequence for guess and answer
-  # Accepts two strings, returns array of enums
-  def check(self, guess: str, answer: str) -> list[Guess]:
-    verify = []
-    for i in range(len(answer)):
-      if guess[i] == answer[i]:
-        verify.append(Guess.GREEN)
-      elif guess[i] in answer:
-        verify.append(Guess.YELLOW)
-      else:
-        verify.append(Guess.GRAY)
-      #answer = answer[:i] + ' ' + answer[i+1:] # For double letters
-    return verify
-
-  # Human play
-  def play(self):
-    for _ in range(6):
-      guess = input('Your guess: ')
-      verfication = self.check(guess, self.answer)
-      print(f'Result: {verfication}')
-      if all(item == Guess.GREEN for item in verfication):
-        print('You won!!!!!!')
-        return
-
-    print(f'You lost! The answer was {self.answer}')
-
-  # Plan:
-  # Generate all possible codes
-  # Generate all possible guesses
-  # Reduce based on check
-  # For each code and guess, check and note largest score group
-  # Choose guess with minimal score group (maximize entropy)
-  def aiPlay(self):
-    guess = 'slate'
-    for _ in range(6):
-      print(f'Computer guess: {guess}')
-      verification = self.user_input()
-      
-      if all(item == Guess.GREEN for item in verification):
-        print('You won!!!!!!')
-        return
-      self.AI.reduce(guess, verification)
-      print(f'Number of choices: {len(self.AI.guessList)}')
-      
-      if (len(self.AI.guessList) <= 5):
-        for guess in self.AI.guessList:
-          print(f'Possible answer: {guess}')
-
-      guess = self.AI.distribution()
-      print(f'Maximum Entropy: {-log(1/len(self.AI.guessList),2)}')
-      
-    print(f'You lost! The answer was {self.answer}')
-
-  def aiTest(self):
-    
-    result = []
-    for word in self.wordList:
-      count = 0
-      guess = 'slate'
-      self.AI.guessList = self.wordList
-      for _ in range(6):
-        count += 1
-        verification = self.check(guess, word)
-        if all(item == 'G' for item in verification):
-          result.append(count)
-          break
-
-        self.AI.reduce(guess, verification)
-        guess = self.AI.distribution()
-
-      if count == 6:
-        result.append(count)
-    return result
-  
-
-if __name__ == '__main__':
-    game = Wordle()
-    #game.play()
-    game.aiPlay()
